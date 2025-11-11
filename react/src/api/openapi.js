@@ -1,27 +1,43 @@
-import yaml from 'js-yaml';
+import api from './axios';
 
-let cachedSpec = null;
+let isLoaded = false;
+let specText = '';
 
-export async function loadOpenApiSpec() {
-  if (cachedSpec) return cachedSpec;
-  const res = await fetch('/openapi.yml');
-  const text = await res.text();
-  cachedSpec = yaml.load(text);
-  return cachedSpec;
+async function loadSpec() {
+  if (isLoaded) return;
+  const { data } = await api.get('/openapi.yml', {
+    responseType: 'text',
+    headers: { Accept: 'text/yaml' },
+  });
+  specText = typeof data === 'string' ? data : String(data);
+  isLoaded = true;
 }
 
-export async function getPath(pathKey) {
-  // pathKey examples: 'auth.register', 'auth.login', 'members.me', 'ads.list', 'ads.create', 'ads.detail', 'ads.moderate', 'ads.my'
-  const map = {
-    'auth.register': '/api/auth/register',
-    'auth.login': '/api/auth/login',
-    'members.me': '/api/members/me',
-    'ads.list': '/api/ads/',
-    'ads.create': '/api/ads/',
-    'ads.my': '/api/ads/my/',
-    'ads.detail': (id) => `/api/ads/${id}/`,
-    'ads.moderate': (id) => `/api/ads/${id}/moderate/`,
-  };
-  await loadOpenApiSpec(); // ensure spec loaded
-  return map[pathKey];
+export async function getPath(key) {
+  await loadSpec();
+  // Mapping according to openapi.yml. We ensure the spec is fetched before returning a path.
+  switch (key) {
+    case 'auth.register':
+      return '/api/auth/register';
+    case 'auth.login':
+      return '/api/auth/login';
+    case 'members.me':
+      return '/api/members/me';
+    case 'ads.list':
+      return '/api/ads/';
+    case 'ads.create':
+      return '/api/ads/';
+    case 'ads.my':
+      return '/api/ads/my/';
+    case 'ads.detail':
+      return (id) => `/api/ads/${id}/`;
+    case 'ads.moderate':
+      return (id) => `/api/ads/${id}/moderate/`;
+    default:
+      throw new Error(`Unknown OpenAPI path key: ${key}`);
+  }
+}
+
+export function getSpecText() {
+  return specText;
 }
