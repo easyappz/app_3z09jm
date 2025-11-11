@@ -1,46 +1,470 @@
 openapi: 3.0.3
 info:
-  title: Easyapp API
+  title: Easyappz Ads API
   version: 1.0.0
-  description: API documentation for easyapp
+servers:
+  - url: /
+tags:
+  - name: Auth
+  - name: Members
+  - name: Ads
+  - name: Misc
 paths:
-  /api/hello/:
+  /openapi.yml:
     get:
-      operationId: api_hello_retrieve
-      description: Get a hello world message
-      tags:
-      - api
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
+      tags: [Misc]
+      summary: Get OpenAPI YAML specification
       responses:
         '200':
+          description: OpenAPI YAML
+          content:
+            text/yaml:
+              schema:
+                type: string
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register new member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRegisterRequest'
+      responses:
+        '201':
+          description: Registered
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Message'
-          description: ''
+                $ref: '#/components/schemas/MemberPublic'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login and get JWT access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLoginRequest'
+      responses:
+        '200':
+          description: Access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/members/me:
+    get:
+      tags: [Members]
+      summary: Get current member profile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Member profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberPublic'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags: [Members]
+      summary: Update current member profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberUpdateRequest'
+      responses:
+        '200':
+          description: Updated member profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberPublic'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/ads/:
+    get:
+      tags: [Ads]
+      summary: List approved ads with search, filters and sorting
+      parameters:
+        - in: query
+          name: q
+          schema: { type: string }
+          description: Search by title or description
+        - in: query
+          name: min_price
+          schema: { type: number, format: float }
+        - in: query
+          name: max_price
+          schema: { type: number, format: float }
+        - in: query
+          name: ordering
+          schema: { type: string, enum: [price, -price, created_at, -created_at] }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+        - in: query
+          name: page_size
+          schema: { type: integer, minimum: 1, maximum: 100 }
+      responses:
+        '200':
+          description: Paginated ads
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdsListResponse'
+    post:
+      tags: [Ads]
+      summary: Create ad (will be pending moderation)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdCreateRequest'
+      responses:
+        '201':
+          description: Created ad
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ad'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/ads/my/:
+    get:
+      tags: [Ads]
+      summary: List current member's ads (any status)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1 }
+        - in: query
+          name: page_size
+          schema: { type: integer, minimum: 1, maximum: 100 }
+      responses:
+        '200':
+          description: Paginated ads
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdsListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/ads/{id}/:
+    get:
+      tags: [Ads]
+      summary: Retrieve ad by id (approved or own)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Ad
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ad'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags: [Ads]
+      summary: Update own ad
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdUpdateRequest'
+      responses:
+        '200':
+          description: Updated Ad
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ad'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (not owner)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Ads]
+      summary: Delete own ad
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (not owner)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/ads/{id}/moderate/:
+    post:
+      tags: [Ads]
+      summary: Moderate ad (moderator only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModerationRequest'
+      responses:
+        '200':
+          description: Moderated Ad
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ad'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (not moderator)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
-    Message:
+    ErrorResponse:
       type: object
       properties:
-        message:
+        detail:
           type: string
-          maxLength: 200
-        timestamp:
+    MemberPublic:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        is_moderator:
+          type: boolean
+        created_at:
           type: string
           format: date-time
-          readOnly: true
-      required:
-      - message
-      - timestamp
-  securitySchemes:
-    basicAuth:
-      type: http
-      scheme: basic
-    cookieAuth:
-      type: apiKey
-      in: cookie
-      name: sessionid
+      required: [id, email, username, is_moderator, created_at]
+    MemberUpdateRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      additionalProperties: false
+    AuthRegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        password:
+          type: string
+      required: [email, username, password]
+      additionalProperties: false
+    AuthLoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required: [email, password]
+      additionalProperties: false
+    AuthTokenResponse:
+      type: object
+      properties:
+        access:
+          type: string
+      required: [access]
+    Ad:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: float
+        contacts:
+          type: string
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        owner:
+          $ref: '#/components/schemas/MemberPublic'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required: [id, title, description, price, contacts, status, owner, created_at, updated_at]
+    AdCreateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: float
+        contacts:
+          type: string
+      required: [title, description, price, contacts]
+      additionalProperties: false
+    AdUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: float
+        contacts:
+          type: string
+      additionalProperties: false
+    ModerationRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [approved, rejected]
+      required: [status]
+      additionalProperties: false
+    AdsListResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          nullable: true
+        previous:
+          type: string
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ad'
+security: []
