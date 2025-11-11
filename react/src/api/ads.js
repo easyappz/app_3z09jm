@@ -1,43 +1,44 @@
-import api from './axios';
-import { getPath } from './openapi';
+import instance from './axios';
+import { ensureOpenAPI } from './openapi';
 
 export async function listAds(params) {
-  const path = await getPath('ads.list');
-  const { data } = await api.get(path, { params });
-  return data;
-}
-
-export async function myAds(params) {
-  const path = await getPath('ads.my');
-  const { data } = await api.get(path, { params });
-  return data;
-}
-
-export async function getAd(id) {
-  const pathFn = await getPath('ads.detail');
-  const { data } = await api.get(pathFn(id));
-  return data;
+  await ensureOpenAPI();
+  const res = await instance.get('/api/ads/', { params });
+  return res.data;
 }
 
 export async function createAd(payload) {
-  const path = await getPath('ads.create');
-  const { data } = await api.post(path, payload);
-  return data;
+  await ensureOpenAPI();
+  const res = await instance.post('/api/ads/', payload);
+  return res.data;
+}
+
+export async function myAds(params) {
+  await ensureOpenAPI();
+  const res = await instance.get('/api/ads/my/', { params });
+  return res.data;
+}
+
+export async function getAd(id) {
+  await ensureOpenAPI();
+  const res = await instance.get(`/api/ads/${id}/`);
+  return res.data;
 }
 
 export async function updateAd(id, payload) {
-  const pathFn = await getPath('ads.detail');
-  const { data } = await api.put(pathFn(id), payload);
-  return data;
+  await ensureOpenAPI();
+  const res = await instance.put(`/api/ads/${id}/`, payload);
+  return res.data;
 }
 
 export async function deleteAd(id) {
-  const pathFn = await getPath('ads.detail');
-  await api.delete(pathFn(id));
+  await ensureOpenAPI();
+  const res = await instance.delete(`/api/ads/${id}/`);
+  return res.data;
 }
 
 export async function moderateAd(id, status) {
-  const pathFn = await getPath('ads.moderate');
-  const { data } = await api.post(pathFn(id), { status });
-  return data;
+  await ensureOpenAPI();
+  const res = await instance.post(`/api/ads/${id}/moderate/`, { status });
+  return res.data;
 }

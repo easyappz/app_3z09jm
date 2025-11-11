@@ -1,43 +1,27 @@
-import api from './axios';
+import YAML from 'js-yaml';
+import instance from './axios';
 
-let isLoaded = false;
-let specText = '';
+let specPromise = null;
 
-async function loadSpec() {
-  if (isLoaded) return;
-  const { data } = await api.get('/openapi.yml', {
-    responseType: 'text',
-    headers: { Accept: 'text/yaml' },
-  });
-  specText = typeof data === 'string' ? data : String(data);
-  isLoaded = true;
-}
-
-export async function getPath(key) {
-  await loadSpec();
-  // Mapping according to openapi.yml. We ensure the spec is fetched before returning a path.
-  switch (key) {
-    case 'auth.register':
-      return '/api/auth/register';
-    case 'auth.login':
-      return '/api/auth/login';
-    case 'members.me':
-      return '/api/members/me';
-    case 'ads.list':
-      return '/api/ads/';
-    case 'ads.create':
-      return '/api/ads/';
-    case 'ads.my':
-      return '/api/ads/my/';
-    case 'ads.detail':
-      return (id) => `/api/ads/${id}/`;
-    case 'ads.moderate':
-      return (id) => `/api/ads/${id}/moderate/`;
-    default:
-      throw new Error(`Unknown OpenAPI path key: ${key}`);
+export async function getOpenAPISpec() {
+  if (!specPromise) {
+    specPromise = instance
+      .get('/openapi.yml', { headers: { Accept: 'text/yaml' } })
+      .then((res) => {
+        try {
+          if (typeof res.data === 'string') {
+            return YAML.load(res.data) || {};
+          }
+          return res.data || {};
+        } catch (e) {
+          return {};
+        }
+      })
+      .catch(() => ({}));
   }
+  return specPromise;
 }
 
-export function getSpecText() {
-  return specText;
+export async function ensureOpenAPI() {
+  await getOpenAPISpec();
 }
