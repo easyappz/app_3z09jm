@@ -2,12 +2,12 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { Layout, Menu } from 'antd';
 import ErrorBoundary from './ErrorBoundary';
-import Home from './pages/Home';
-import AdDetail from './pages/AdDetail';
-import CreateAd from './pages/CreateAd';
-import Profile from './pages/Profile';
-import MyAds from './pages/MyAds';
-import NotFound from './pages/NotFound';
+import Home from './pages/Home.jsx';
+import AdDetail from './pages/AdDetail.jsx';
+import CreateAd from './pages/CreateAd.jsx';
+import Profile from './pages/Profile.jsx';
+import MyAds from './pages/MyAds.jsx';
+import NotFound from './pages/NotFound.jsx';
 import './App.css';
 
 const { Header, Content, Footer } = Layout;
